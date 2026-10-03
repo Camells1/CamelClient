@@ -1,6 +1,6 @@
 {
   "name": "camel-client",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "author": "Camel Studios",
   "description": "Camel Client: sign in, install and play every Camel Studios game.",
   "main": "electron/main.js",

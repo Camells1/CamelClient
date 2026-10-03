@@ -1,6 +1,7 @@
 // Camel Studios accounts (Firebase): sign in, create an account with a unique name#TAG,
 // friends and who's online. The same accounts the website and the games use.
 import { initializeApp } from '../vendor/firebase/firebase-app.js';
+import { clean, ok } from './filter.js';
 import {
   getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile,
   sendPasswordResetEmail, signOut, setPersistence, browserLocalPersistence, browserSessionPersistence
@@ -76,6 +77,7 @@ export const Account = {
     name = cleanName(name); tag = cleanTag(tag) || randomTag();
     if (name.length < 3) throw new Error('Your name needs at least 3 characters.');
     if (tag.length < 3) throw new Error('Your tag needs 3 to 5 letters or numbers.');
+    if (!ok(name) || !ok(tag)) throw new Error("Pick a different name or tag: that one isn't allowed.");
     // Check the ID first so we don't create an account that then has no name
     const taken = await getDoc(doc(db, 'ids', keyOf(name, tag)));
     if (taken.exists()) throw Object.assign(new Error(TAKEN), { code: 'id-taken' });
@@ -107,7 +109,7 @@ export const Friends = {
       this.error = '';
       this.list = snap.docs.map(d => {
         const x = d.data(), other = x.users.find(u => u !== me.uid);
-        return { pair: d.id, uid: other, id: x.ids?.[other] || 'Player', status: x.status, incoming: x.status === 'pending' && x.from !== me.uid };
+        return { pair: d.id, uid: other, id: clean(x.ids?.[other] || 'Player'), status: x.status, incoming: x.status === 'pending' && x.from !== me.uid };
       });
       // Watch whether each friend is online
       const want = new Set(this.list.filter(f => f.status === 'accepted').map(f => f.uid));
@@ -161,8 +163,8 @@ export const Friends = {
 
 // ---------------------------------------------------------------- chat with a friend
 const pairOf = (a, b) => [a, b].sort().join('_');
-const cleanText = t => String(t || '').replace(/\s+/g, ' ').trim().slice(0, 500);
-const msgOf = d => { const x = d.data(); return { id: d.id, from: x.from, text: x.text, at: x.at?.toMillis ? x.at.toMillis() : Date.now() }; };
+const cleanText = t => clean(String(t || '').replace(/\s+/g, ' ').trim().slice(0, 500));
+const msgOf = d => { const x = d.data(); return { id: d.id, from: x.from, text: clean(x.text), at: x.at?.toMillis ? x.at.toMillis() : Date.now() }; };
 export const Chat = {
   me: null, uid: null, messages: [], last: new Map(), onChange: null, _unsub: null, _watch: new Map(),
   start(me) { this.me = me; },
