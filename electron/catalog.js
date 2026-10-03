@@ -3,6 +3,13 @@
 // local: an installer on this PC, used when a game (or a newer build) isn't published yet.
 module.exports = [
   {
+    id: 'dontwakegrandpa', name: "Don't Wake Grandpa", accent: '#b79bff', genre: 'Co-op heist',
+    tagline: 'Rob a sleeping giant. Whatever you do, keep it down.',
+    about: "Two to four tiny beans sneak out of the mouse hole to pinch a sleeping giant's stuff. He can hear your footsteps, the things you drop and your real microphone. Wake him and he comes after you with a bunny slipper. Dress your whole bean, carry loot over your head, and troll your friends with shrink rays, glue and cream pies.",
+    repo: 'Camells1/DontWakeGrandpa', asset: 'DontWakeGrandpa-Setup.exe', exe: 'Dont Wake Grandpa.exe', dir: 'DontWakeGrandpa',
+    local: 'D:/Projects/DontWakeGrandpa/dist/DontWakeGrandpa-Setup.exe'
+  },
+  {
     id: 'nightshiftzoo', name: 'Night Shift Zoo', accent: '#ffc93c', genre: 'Co-op survival',
     tagline: '5 days. 5 nights. Don\'t get eaten.',
     about: 'Two to four keepers walk into the zoo, the gates slam shut, and they stay shut for five days and five nights. Feed the animals, fix the fences, bring your friends back when they get eaten. Everyone is a bean, and there is proximity voice chat.',

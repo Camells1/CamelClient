@@ -8,12 +8,14 @@ const api = window.camel;
 
 // Artwork and news that ship with the client
 const ART = {
+  dontwakegrandpa: { icon: 'assets/games/dontwakegrandpa-icon.png', hero: 'assets/games/dontwakegrandpa-awake.jpg', shots: ['dontwakegrandpa-asleep.jpg', 'dontwakegrandpa-chase.jpg', 'dontwakegrandpa-beans.jpg'] },
   nightshiftzoo: { icon: 'assets/games/nightshiftzoo-icon.png', hero: 'assets/games/nightshiftzoo-woods.jpg', shots: ['nightshiftzoo-slam.jpg', 'nightshiftzoo-night.jpg', 'nightshiftzoo-bus.jpg'] },
   riftline: { icon: 'assets/games/riftline-icon.png', hero: 'assets/games/riftline-lineup.jpg', shots: ['riftline-fps.jpg', 'riftline-menu.jpg', 'riftline-lineup.jpg'] },
   shattercrown: { icon: 'assets/games/shattercrown-icon.svg', hero: 'assets/games/shattercrown-gameplay.jpg', shots: ['shattercrown-gameplay.jpg', 'shattercrown-boss.jpg', 'shattercrown-title.jpg'] },
   hollowtide: { icon: 'assets/games/hollowtide-icon.png', hero: 'assets/games/hollowtide-title.jpg', shots: ['hollowtide-title.jpg', 'hollowtide-friend.jpg', 'hollowtide-city.jpg'] }
 };
 const NEWS = {
+  dontwakegrandpa: { kind: 'New game', title: 'Shhh. He is asleep.', text: 'Sneak out of the mouse hole with up to three friends and rob a sleeping giant. He can hear your real microphone. Do not wake Grandpa.' },
   nightshiftzoo: { kind: 'New game', title: 'The gates are closing', text: 'Walk into the zoo with up to three friends and survive five days and five nights. Everyone is a bean. Do not get eaten.' },
   hollowtide: { kind: 'Big update', title: 'The lagoon grows up', text: 'First person, a lagoon ten times the size, sunken cities to climb and proximity voice with your friends.' },
   riftline: { kind: 'Tactical shooter', title: 'Plant, defuse, repeat', text: 'Six maps, a full agent roster and tense rounds against a friend or bots.' },
