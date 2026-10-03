@@ -3,6 +3,13 @@
 // local: an installer on this PC, used when a game (or a newer build) isn't published yet.
 module.exports = [
   {
+    id: 'nightshiftzoo', name: 'Night Shift Zoo', accent: '#ffc93c', genre: 'Co-op survival',
+    tagline: '5 days. 5 nights. Don\'t get eaten.',
+    about: 'Two to four keepers walk into the zoo, the gates slam shut, and they stay shut for five days and five nights. Feed the animals, fix the fences, bring your friends back when they get eaten. Everyone is a bean, and there is proximity voice chat.',
+    repo: 'Camells1/NightShiftZoo', asset: 'NightShiftZoo-Setup.exe', exe: 'Night Shift Zoo.exe', dir: 'NightShiftZoo',
+    local: 'D:/Projects/NightShiftZoo/dist/NightShiftZoo-Setup.exe'
+  },
+  {
     id: 'riftline', name: 'Riftline', accent: '#ff4655', genre: 'Tactical shooter',
     tagline: 'A tactical 3D 1v1 / 2v2 shooter with agents and abilities.',
     about: 'Pick an agent, buy your loadout and plant or defuse across six maps. Play a friend with a room code, or practise against bots.',
