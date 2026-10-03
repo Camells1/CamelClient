@@ -22,12 +22,5 @@ module.exports = [
     about: 'A first-person scramble across a drained lagoon: loot sunken cities, fight hollow crabs and get back to an island before the sea returns. Solo or co-op with proximity voice.',
     repo: 'Camells1/Hollowtide', asset: 'Hollowtide-Setup.exe', exe: 'Hollowtide.exe', dir: 'Hollowtide',
     local: 'D:/Projects/Hollowtide/dist/Hollowtide-Setup.exe'
-  },
-  {
-    id: 'lanternfall', name: 'Lanternfall', accent: '#ffb347', genre: 'Adventure',
-    tagline: 'Carry the light down into the dark.',
-    about: 'A first-person descent with a lantern as your lifeline. In development.',
-    repo: null, asset: 'Lanternfall-Setup.exe', exe: 'Lanternfall.exe', dir: 'Lanternfall',
-    local: 'D:/Projects/Lanternfall/dist/Lanternfall-Setup.exe'
   }
 ];

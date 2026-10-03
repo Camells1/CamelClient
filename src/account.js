@@ -6,7 +6,7 @@ import {
   sendPasswordResetEmail, signOut, setPersistence, browserLocalPersistence, browserSessionPersistence
 } from '../vendor/firebase/firebase-auth.js';
 import {
-  getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, writeBatch, serverTimestamp, collection, query, where, onSnapshot
+  getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, addDoc, writeBatch, serverTimestamp, collection, query, where, orderBy, limitToLast, onSnapshot, arrayUnion, arrayRemove
 } from '../vendor/firebase/firebase-firestore.js';
 
 // Public web config (safe to ship: access is controlled by Firebase Auth and the Firestore rules)
@@ -58,14 +58,14 @@ export const Account = {
 
   start() {
     onAuthStateChanged(auth, async u => {
-      if (!u) { this.user = null; this.ready = true; Friends.stop(); this.onChange?.(null); return; }
+      if (!u) { this.user = null; this.ready = true; Friends.stop(); Chat.stop(); Party.stop(); this.onChange?.(null); return; }
       const [name, tag] = splitId(u.displayName);
       this.user = { uid: u.uid, email: u.email, name: name || 'Player', tag: tag || '', id: name && tag ? `${name}#${tag}` : (u.email || 'Player') };
       this.ready = true;
       this.onChange?.(this.user);
       // Accounts made before IDs were unique: register theirs the first time we see them
       if (name && tag) { try { const mine = await getDoc(doc(db, 'users', u.uid)); if (!mine.exists() || mine.data().id !== keyOf(name, tag)) await claim(u, name, tag); } catch (_) {} }
-      Friends.start(this.user);
+      Friends.start(this.user); Chat.start(this.user); Party.start(this.user);
     });
   },
   async signIn(email, password, stay) {
@@ -88,7 +88,7 @@ export const Account = {
     Friends.start(this.user);
   },
   reset: email => sendPasswordResetEmail(auth, email.trim()),
-  async signOut() { await Friends.setPresence('offline'); Friends.stop(); await signOut(auth); },
+  async signOut() { await Friends.setPresence('offline'); Friends.stop(); Chat.stop(); Party.stop(); await signOut(auth); },
   // What a game needs to sign the player in by itself
   session() { const u = auth.currentUser; return u && this.user ? { uid: u.uid, email: u.email, name: this.user.name, tag: this.user.tag, refreshToken: u.refreshToken } : null; }
 };
@@ -157,4 +157,75 @@ export const Friends = {
   },
   accept: pair => updateDoc(doc(db, 'friends', pair), { status: 'accepted' }),
   remove: pair => deleteDoc(doc(db, 'friends', pair))
+};
+
+// ---------------------------------------------------------------- chat with a friend
+const pairOf = (a, b) => [a, b].sort().join('_');
+const cleanText = t => String(t || '').replace(/\s+/g, ' ').trim().slice(0, 500);
+const msgOf = d => { const x = d.data(); return { id: d.id, from: x.from, text: x.text, at: x.at?.toMillis ? x.at.toMillis() : Date.now() }; };
+export const Chat = {
+  me: null, uid: null, messages: [], last: new Map(), onChange: null, _unsub: null, _watch: new Map(),
+  start(me) { this.me = me; },
+  stop() { this.close(); for (const un of this._watch.values()) un(); this._watch.clear(); this.last.clear(); this.me = null; },
+  // Watch the newest message from each friend so the list can show an unread dot
+  watch(uids) {
+    if (!this.me) return;
+    for (const [uid, un] of this._watch) if (!uids.includes(uid)) { un(); this._watch.delete(uid); this.last.delete(uid); }
+    for (const uid of uids) if (!this._watch.has(uid)) {
+      const q = query(collection(db, 'chats', pairOf(this.me.uid, uid), 'messages'), orderBy('at'), limitToLast(1));
+      this._watch.set(uid, onSnapshot(q, s => { const m = s.docs[0] && msgOf(s.docs[0]); if (m) { this.last.set(uid, m); this.onChange?.(); } }, () => {}));
+    }
+  },
+  unread(uid) { const m = this.last.get(uid); return !!m && m.from !== this.me?.uid && m.at > +(localStorage.getItem('read:' + uid) || 0) && this.uid !== uid; },
+  open(uid) {
+    this.close(); this.uid = uid; this.messages = [];
+    const q = query(collection(db, 'chats', pairOf(this.me.uid, uid), 'messages'), orderBy('at'), limitToLast(60));
+    this._unsub = onSnapshot(q, s => { this.messages = s.docs.map(msgOf); localStorage.setItem('read:' + uid, String(Date.now())); this.onChange?.(); }, e => { this.error = nice(e); this.onChange?.(); });
+  },
+  close() { this._unsub?.(); this._unsub = null; this.uid = null; this.messages = []; this.error = ''; },
+  send(text) { text = cleanText(text); if (!text || !this.uid) return; return addDoc(collection(db, 'chats', pairOf(this.me.uid, this.uid), 'messages'), { from: this.me.uid, text, at: serverTimestamp() }); }
+};
+
+// ---------------------------------------------------------------- parties (up to 4)
+// One party at a time. The leader invites friends, picks the game and shares the room code;
+// everyone in the party gets a group chat.
+export const Party = {
+  me: null, party: null, invites: [], messages: [], onChange: null, _subs: [], _msgUnsub: null,
+  start(me) {
+    this.stop(); this.me = me;
+    const col = collection(db, 'parties'), shape = d => ({ id: d.id, ...d.data() });
+    this._subs.push(onSnapshot(query(col, where('members', 'array-contains', me.uid)), s => {
+      const p = s.docs.map(shape)[0] || null, changed = p?.id !== this.party?.id;
+      this.party = p;
+      if (changed) { this._msgUnsub?.(); this._msgUnsub = null; this.messages = []; if (p) this._msgUnsub = onSnapshot(query(collection(db, 'parties', p.id, 'messages'), orderBy('at'), limitToLast(60)), m => { this.messages = m.docs.map(msgOf); this.onChange?.(); }, () => {}); }
+      this.onChange?.();
+    }, () => {}));
+    this._subs.push(onSnapshot(query(col, where('invited', 'array-contains', me.uid)), s => { this.invites = s.docs.map(shape); this.onChange?.(); }, () => {}));
+  },
+  stop() { for (const un of this._subs) un(); this._subs = []; this._msgUnsub?.(); this._msgUnsub = null; this.party = null; this.invites = []; this.messages = []; this.me = null; },
+  get leading() { return !!this.party && this.party.leader === this.me?.uid; },
+  async create() {
+    if (this.party) return;
+    await addDoc(collection(db, 'parties'), { leader: this.me.uid, members: [this.me.uid], invited: [], ids: { [this.me.uid]: this.me.id }, game: '', code: '', at: serverTimestamp() });
+  },
+  async invite(uid, id) {
+    if (!this.party) await this.create();
+    for (let i = 0; i < 20 && !this.party; i++) await new Promise(r => setTimeout(r, 150));
+    const p = this.party; if (!p) throw new Error('Could not start a party.');
+    if (p.members.includes(uid)) throw new Error('They are already in your party.');
+    if (p.members.length + p.invited.length >= 4) throw new Error('A party holds 4 players.');
+    await updateDoc(doc(db, 'parties', p.id), { invited: arrayUnion(uid), ['ids.' + uid]: id });
+  },
+  async accept(partyId) {
+    if (this.party) await this.leave();
+    await updateDoc(doc(db, 'parties', partyId), { members: arrayUnion(this.me.uid), invited: arrayRemove(this.me.uid), ['ids.' + this.me.uid]: this.me.id });
+  },
+  decline: function (partyId) { return updateDoc(doc(db, 'parties', partyId), { invited: arrayRemove(this.me.uid) }); },
+  async leave() {
+    const p = this.party; if (!p) return;
+    if (p.leader === this.me.uid) await deleteDoc(doc(db, 'parties', p.id));
+    else await updateDoc(doc(db, 'parties', p.id), { members: arrayRemove(this.me.uid) });
+  },
+  set(fields) { if (this.party) return updateDoc(doc(db, 'parties', this.party.id), fields); },
+  send(text) { text = cleanText(text); if (!text || !this.party) return; return addDoc(collection(db, 'parties', this.party.id, 'messages'), { from: this.me.uid, text, at: serverTimestamp() }); }
 };
