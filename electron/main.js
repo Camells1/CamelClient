@@ -119,6 +119,19 @@ function download(url, file, onProgress) {
   });
 }
 
+// A copy of the game that is still open (even one the client didn't start, or one left behind after its
+// window closed) locks its files, and the installer then gives up with code 2. Close it first.
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const taskkill = args => new Promise(resolve => execFile('taskkill.exe', args, { windowsHide: true, timeout: 8000 }, () => resolve()));
+const isOpen = exe => new Promise(resolve => execFile('tasklist.exe', ['/FI', `IMAGENAME eq ${exe}`, '/FO', 'CSV', '/NH'], { windowsHide: true, timeout: 8000 },
+  (err, out) => resolve(!err && String(out).toLowerCase().includes(exe.toLowerCase()))));
+async function closeGame(g) {
+  if (!await isOpen(g.exe)) return;
+  await taskkill(['/IM', g.exe]);                                                   // ask nicely first
+  for (let i = 0; i < 12 && await isOpen(g.exe); i++) await sleep(250);
+  if (await isOpen(g.exe)) { await taskkill(['/F', '/T', '/IM', g.exe]); await sleep(1200); }
+}
+
 const busy = new Set();
 // source: 'release' (download the published installer) or 'local' (an installer on this PC)
 ipcMain.handle('games:install', async (_e, id, source) => {
@@ -142,10 +155,14 @@ ipcMain.handle('games:install', async (_e, id, source) => {
     const dir = path.join(state.library, g.dir);
     fs.mkdirSync(state.library, { recursive: true });
     // NSIS silent install: /D= must be last and unquoted
-    await new Promise((resolve, reject) => {
+    const runInstaller = () => new Promise((resolve, reject) => {
       const p = spawn(installer, ['/S', `/D=${dir}`], { windowsVerbatimArguments: true, windowsHide: true });
-      p.on('error', reject); p.on('exit', code => (code === 0 ? resolve() : reject(new Error('The installer stopped (code ' + code + ').'))));
+      p.on('error', reject); p.on('exit', resolve);
     });
+    await closeGame(g);
+    let code = await runInstaller();
+    if (code !== 0) { await closeGame(g); await sleep(2500); code = await runInstaller(); }   // one more go
+    if (code !== 0) throw new Error(`The installer stopped (code ${code}). Make sure ${g.name} is fully closed (or restart your PC), then try again.`);
     if (!fs.existsSync(path.join(dir, g.exe))) throw new Error('Install finished but the game is missing.');
     state.games[id] = { dir }; saveState();
     if (source !== 'local') { try { fs.rmSync(installer, { force: true }); } catch (_) {} }
@@ -161,6 +178,7 @@ ipcMain.handle('games:uninstall', async (_e, id) => {
   const g = gameById(id), info = g && await installInfo(g);
   if (!info?.installed) return { ok: false, error: 'Not installed.' };
   if (running.has(id)) return { ok: false, error: `Close ${g.name} first.` };
+  await closeGame(g);
   const un = fs.readdirSync(info.dir).find(f => /^Uninstall .*\.exe$/i.test(f));
   if (!un) return { ok: false, error: 'No uninstaller found in the game folder.' };
   await new Promise(resolve => { const p = spawn(path.join(info.dir, un), ['/S'], { windowsHide: true }); p.on('exit', resolve); p.on('error', resolve); });
