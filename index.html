@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src https:" />
+  <title>Camel Client</title>
+  <link rel="stylesheet" href="src/style.css" />
+</head>
+<body>
+  <!-- Window bar (the window has no frame of its own) -->
+  <header id="bar">
+    <div class="drag"></div>
+    <div class="win-btns">
+      <button data-win="min" title="Minimise"><svg viewBox="0 0 12 12"><path d="M2 6h8"/></svg></button>
+      <button data-win="max" title="Maximise"><svg viewBox="0 0 12 12"><rect x="2.500" y="2.500" width="7" height="7"/></svg></button>
+      <button data-win="close" class="close" title="Close"><svg viewBox="0 0 12 12"><path d="M2.500 2.500l7 7M9.500 2.500l-7 7"/></svg></button>
+    </div>
+  </header>
+
+  <!-- Sign in -->
+  <section id="login" class="hidden">
+    <div class="login-panel">
+      <div class="login-brand"><img src="assets/games/camel.svg" alt="" /><span>CAMEL STUDIOS</span></div>
+      <h1 id="login-title">Sign in</h1>
+      <form id="f-in" autocomplete="on">
+        <label>Email<input id="in-email" type="email" autocomplete="username" required /></label>
+        <label>Password<input id="in-pass" type="password" autocomplete="current-password" required /></label>
+        <label class="check"><input id="in-stay" type="checkbox" checked /> Stay signed in</label>
+        <button class="go" type="submit" title="Sign in"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+        <div class="login-links"><a id="l-reset">Can't sign in?</a><a id="l-up">Create account</a></div>
+      </form>
+      <form id="f-up" class="hidden" autocomplete="off">
+        <label>Email<input id="up-email" type="email" required /></label>
+        <label>Password<input id="up-pass" type="password" minlength="6" required /></label>
+        <div class="id-row">
+          <label>Name<input id="up-name" maxlength="14" required /></label>
+          <label class="tag">Tag<input id="up-tag" maxlength="5" /></label>
+        </div>
+        <p class="hint">Your ID is <b id="up-preview">Name#TAG</b>. Friends add you with it.</p>
+        <button class="go" type="submit" title="Create account"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+        <div class="login-links"><a id="l-in">I already have an account</a></div>
+      </form>
+      <p id="login-msg"></p>
+      <div class="login-foot">One account for every Camel Studios game.</div>
+    </div>
+    <div class="login-art" id="login-art"><div class="art-caption"><b id="art-name"></b><span id="art-tag"></span></div></div>
+  </section>
+
+  <!-- The client -->
+  <div id="app" class="hidden">
+    <nav id="rail">
+      <button class="rail-logo" data-nav="home" title="Camel Studios"><img src="assets/games/camel.svg" alt="" /></button>
+      <button class="rail-btn" data-nav="home" title="Home"><svg viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/></svg></button>
+      <button class="rail-btn" data-nav="library" title="Library"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.500"/><rect x="13" y="4" width="7" height="7" rx="1.500"/><rect x="4" y="13" width="7" height="7" rx="1.500"/><rect x="13" y="13" width="7" height="7" rx="1.500"/></svg></button>
+      <div class="rail-sep"></div>
+      <div id="rail-games"></div>
+      <div class="rail-fill"></div>
+      <button class="rail-btn" data-nav="settings" title="Settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.600 5.600l2.100 2.100M16.300 16.300l2.100 2.100M5.600 18.400l2.100-2.100M16.300 7.700l2.100-2.100"/></svg></button>
+    </nav>
+    <main id="view"></main>
+    <aside id="social">
+      <div class="me">
+        <div class="avatar" id="me-avatar"></div>
+        <div class="me-text"><b id="me-name"></b><span id="me-status">Online</span></div>
+        <button id="social-toggle" title="Hide friends"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6M18 5v14"/></svg></button>
+      </div>
+      <div class="tabs" id="social-tabs">
+        <button data-tab="friends" class="on" title="Friends"><svg viewBox="0 0 24 24"><path d="M4 7h3M4 12h3M4 17h3M10 7h10M10 12h10M10 17h10"/></svg></button>
+        <button data-tab="requests" title="Requests"><svg viewBox="0 0 24 24"><path d="M4 6h16v10H9l-5 4z"/></svg><i id="req-dot"></i></button>
+        <button data-tab="add" title="Add a friend"><svg viewBox="0 0 24 24"><circle cx="10" cy="9" r="3.500"/><path d="M3.500 19c1-3.500 3.500-5 6.500-5s5.500 1.500 6.500 5M18 7v6M15 10h6"/></svg></button>
+      </div>
+      <div id="social-body"></div>
+    </aside>
+    <button id="social-open" class="hidden" title="Show friends"><svg viewBox="0 0 24 24"><circle cx="9" cy="9" r="3.500"/><path d="M2.500 19c1-3.500 3.500-5 6.500-5s5.500 1.500 6.500 5M17 8a3 3 0 010 6M19 19c-.300-1.500-1-2.700-2-3.500"/></svg><i id="open-count"></i></button>
+  </div>
+
+  <div id="toast"></div>
+  <script type="module" src="src/app.js"></script>
+</body>
+</html>

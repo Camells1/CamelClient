@@ -1,0 +1,42 @@
+{
+  "name": "camel-client",
+  "version": "0.1.0",
+  "author": "Camel Studios",
+  "description": "Camel Client: sign in, install and play every Camel Studios game.",
+  "main": "electron/main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "icon": "electron tools/make-icon.js",
+    "build": "electron-builder --win --publish never"
+  },
+  "devDependencies": {
+    "electron": "^30.0.0",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.camelstudios.client",
+    "productName": "Camel Client",
+    "copyright": "© 2026 Camel Studios",
+    "files": [
+      "electron/**/*",
+      "src/**/*",
+      "vendor/**/*",
+      "assets/**/*",
+      "index.html",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "artifactName": "Camel-Client-Setup-${version}.${ext}"
+    }
+  }
+}
