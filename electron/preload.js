@@ -13,5 +13,6 @@ contextBridge.exposeInMainWorld('camel', {
     onProgress: fn => ipcRenderer.on('games:progress', (_e, v) => fn(v)),
     onExit: fn => ipcRenderer.on('games:exit', (_e, v) => fn(v))
   },
-  chooseLibrary: () => ipcRenderer.invoke('settings:library')
+  chooseLibrary: () => ipcRenderer.invoke('settings:library'),
+  update: { check: () => ipcRenderer.invoke('client:check'), apply: () => ipcRenderer.invoke('client:update'), onProgress: fn => ipcRenderer.on('client:progress', (_e, v) => fn(v)) }
 });

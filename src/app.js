@@ -296,4 +296,16 @@ Account.onChange = user => {
   setInterval(() => { if (S.me && !Object.keys(S.progress).length) refresh(); }, 5 * 60 * 1000);
   addEventListener('focus', () => { if (S.me && !Object.keys(S.progress).length) refresh(); });
 })();
+// The client updates itself: a button appears in the top bar when a new version is out
+async function checkUpdate() {
+  const u = await api.update.check(); if (!u) return;
+  const b = $('#update'); b.textContent = `Update to ${u.version}`; b.classList.remove('hidden');
+}
+$('#update').addEventListener('click', async e => {
+  const b = e.currentTarget; b.disabled = true; b.textContent = 'Updating…';
+  const r = await api.update.apply();
+  if (!r.ok) { toast(r.error, true); b.disabled = false; b.textContent = 'Try update again'; }
+});
+api.update.onProgress(p => { $('#update').textContent = `Updating ${Math.round(p * 100)}%`; });
+checkUpdate(); setInterval(checkUpdate, 30 * 60 * 1000);
 window.__cc = { S, Account, Friends, Chat, Party, nav, refresh, renderSocial };

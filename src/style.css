@@ -150,3 +150,6 @@ h1.page { font: 700 30px var(--display); letter-spacing: .5px; margin: 8px 0 20p
 #toast { position: fixed; left: 50%; bottom: 28px; transform: translate(-50%, 20px); padding: 11px 20px; border-radius: 14px; background: var(--panel2); border: 1px solid var(--line); opacity: 0; transition: opacity .2s, transform .2s; pointer-events: none; z-index: 60; max-width: 80vw; box-shadow: 0 12px 40px rgba(0, 0, 0, .5); }
 #toast.on { opacity: 1; transform: translate(-50%, 0); } #toast.bad { border-color: var(--red); }
 @media (max-width: 1250px) { .cols { grid-template-columns: 1fr; } }
+
+#update { padding: 7px 14px; border-radius: 12px; background: linear-gradient(135deg, var(--gold), #ff9a3d); color: #2a1500; font: 700 12px var(--display); letter-spacing: 1.5px; text-transform: uppercase; }
+#update:hover { filter: brightness(1.08); } #update:disabled { opacity: .7; cursor: default; }

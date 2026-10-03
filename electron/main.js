@@ -192,6 +192,32 @@ ipcMain.handle('games:launch', async (_e, id, session) => {
   } catch (e) { return { ok: false, error: e.message || String(e) }; }
 });
 
+// ---------------------------------------------------------------- updating the client itself
+const newer = (a, b) => { const x = String(a).split('.').map(Number), y = String(b).split('.').map(Number); for (let i = 0; i < 3; i++) { if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0); } return false; };
+let pendingUpdate = null;
+ipcMain.handle('client:check', async () => {
+  if (DEV) return null;
+  try {
+    const res = await fetch('https://api.github.com/repos/Camells1/CamelClient/releases/latest', { headers: { 'User-Agent': 'CamelClient', Accept: 'application/vnd.github+json' } });
+    if (!res.ok) return null;
+    const j = await res.json(), version = String(j.tag_name || '').replace(/^v/, ''), asset = (j.assets || []).find(x => x.name === 'Camel-Client-Setup.exe');
+    if (!asset || !newer(version, app.getVersion())) return null;
+    pendingUpdate = { version, url: asset.browser_download_url };
+    return { version };
+  } catch (_) { return null; }
+});
+// Download the new installer, run it quietly over this install and start the new version
+ipcMain.handle('client:update', async () => {
+  if (!pendingUpdate) return { ok: false, error: 'No update found.' };
+  if (running.size) return { ok: false, error: 'Close your game first.' };
+  try {
+    const file = await download(pendingUpdate.url, path.join(DOWNLOADS, 'Camel-Client-Setup.exe'), (got, total) => send('client:progress', total ? got / total : 0));
+    spawn(file, ['/S', '--force-run'], { detached: true, stdio: 'ignore' }).unref();
+    setTimeout(() => app.quit(), 400);
+    return { ok: true };
+  } catch (e) { return { ok: false, error: e.message || String(e) }; }
+});
+
 // ---------------------------------------------------------------- settings
 ipcMain.handle('settings:library', async () => {
   const r = await dialog.showOpenDialog(win, { title: 'Where should games be installed?', defaultPath: state.library, properties: ['openDirectory', 'createDirectory'] });
